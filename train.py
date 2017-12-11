@@ -58,10 +58,12 @@ def main(_):
       os.mkdir(FLAGS.save_path)
 
   # Problem.
+  # TODO: renew config for wavenet
   problem, net_config, net_assignments = util.get_config(FLAGS.problem)
 
   # Optimizer setup.
   optimizer = meta.MetaOptimizer(**net_config)
+  # TODO: update meta minimzation operators for wavenet
   minimize = optimizer.meta_minimize(
       problem, FLAGS.unroll_length,
       learning_rate=FLAGS.learning_rate,

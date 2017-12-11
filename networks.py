@@ -1,4 +1,3 @@
-# Copyright 2016 Google Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +30,7 @@ import tensorflow as tf
 import preprocess
 
 
+# net: first element of config
 def factory(net, net_options=(), net_path=None):
   """Network factory."""
 
@@ -150,6 +150,62 @@ def _get_layer_initializers(initializers, layer_name, fields):
 
   return _get_initializers(initializers, fields)
 
+# TODO: construct wavenet according to this
+# WaveNet does not inherit from the RNN Network metaclass.
+# Needs to implement all necessary functions
+class WaveNet():
+    """WaveNet without dilation"""
+
+  def __init__(self, output_size, layers, preprocess_name='identity',
+               preproess_options=None, scale=1.0, initializer=None,
+               name='wavenet'):
+    """Creates an instance of 'WaveNet'.
+
+    Args:
+      output_size: Ouptput sizes of the final linear layer (TODO: might not need this layer?)
+      layers: Number of layers for WaveNet
+      preprocess_name: Gradient preprocessing class name (in `l2l.preprocess` or
+          tf modules). Default is `tf.identity`.
+      preprocess_options: Gradient preprocessing options.
+      scale: Gradient scaling (default is 1.0).
+      initializer: Variable initializer for linear layer. See `snt.Linear` and
+          `snt.LSTM` docs for more info. This parameter can be a string (e.g.
+          "zeros" will be converted to tf.zeros_initializer).
+      name: Module name.
+    """
+    self._output_size = output_size
+    self._scale = scale
+
+    if hasattr(preprocess, preprocess_name):
+      preprocess_class = getattr(preprocess, preprocess_name)
+      self._preprocess = preprocess_class(**preprocess_options)
+    else:
+      self._preprocess = getattr(tf, preprocess_name)
+
+  # TODO: build WaveNet graph
+  def _build(self, inputs, input_queue):
+    """Connects the `WaveNet` module into the graph.
+
+    Args:
+      inputs: 2D `Tensor` ([batch_size, input_size]).
+      input_queue: 3D `Tensor` [batch_size, input_length, input_size]
+    Returns:
+      `Tensor` shaped as `inputs`.
+    """
+    # Adds preprocessing dimension and preprocess.
+    inputs = self._preprocess(tf.expand_dims(inputs, -1))
+    # Incorporates preprocessing into data dimension.
+    inputs = tf.reshape(inputs, [inputs.get_shape().as_list()[0], 1, -1])
+    # update input queue with new input
+    new_input_queue = tf.slice(inputs, [0, 0, 0], [-1, self._input_length-1, -1])
+    new_input_queue = tf.concatenate([new_input_queue, inputs], axis=1)
+    # WaveNet here
+    output = self._wavenet_model(new_input_queue)
+    return self._linear(output) * self._scale, new_input_queue
+
+ 
+
+        
 
 class StandardDeepLSTM(Network):
   """LSTM layers with a Linear layer on top."""
@@ -246,6 +302,7 @@ class CoordinateWiseDeepLSTM(StandardDeepLSTM):
     reshaped_inputs = self._reshape_inputs(inputs)
 
     build_fn = super(CoordinateWiseDeepLSTM, self)._build
+    # TODO: build_fn is where forward graph takes place
     output, next_state = build_fn(reshaped_inputs, prev_state)
 
     # Recover original shape.
