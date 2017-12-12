@@ -47,6 +47,7 @@ def print_stats(header, total_error, total_time, n):
   print("Mean epoch time: {:.2f} s".format(total_time / n))
 
 
+# name: 'cw'
 def get_net_path(name, path):
   return None if path is None else os.path.join(path, name + ".l2l")
 
@@ -96,6 +97,16 @@ def get_config(problem_name, path=None):
         "net_path": get_net_path("cw", path)
     }}
     net_assignments = None
+  # Luna: Add problem for quadratic-wav
+  elif problem_name == "quadratic-wav":
+    problem = problems.quadratic(batch_size=1, num_dims=2)
+    net_config = {"cw-wav": {
+        "net": "CoordinateWiseWaveNet",
+        "net_options": None, 
+        "net_path": get_net_path("cw", path)
+    }}
+    net_assignments = None
+  
   elif problem_name == "mnist":
     mode = "train" if path is None else "test"
     problem = problems.mnist(layers=(20,), mode=mode)

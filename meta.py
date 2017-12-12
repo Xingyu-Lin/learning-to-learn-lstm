@@ -138,8 +138,6 @@ def _make_with_custom_variables(func, variables):
   variables = collections.deque(variables)
 
   def custom_getter(getter, name, **kwargs):
-    if kwargs["trainable"]:
-      return variables.popleft()
     else:
       kwargs["reuse"] = True
       return getter(name, **kwargs)
@@ -176,14 +174,21 @@ def _make_nets(variables, config, net_assignments):
   name_to_index = dict((v.name.split(":")[0], i)
                        for i, v in enumerate(variables))
 
+  # TODO: use default net_assignment for wavenet. Only test on quadratic for now.
   if net_assignments is None:
     if len(config) != 1:
       raise ValueError("Default net_assignments can only be used if there is "
                        "a single net config.")
 
     with tf.variable_scope("vars_optimizer"):
+      # Luna: key=cw-wav
+      # kwargs:
+      # 103         "net": "CoordinateWiseWaveNet",
+      # 104         "net_options": None,
+      # 105         "net_path": get_net_path("cw", path)
       key = next(iter(config))
       kwargs = config[key]
+      # TODO: add wavenet to network factory
       net = networks.factory(**kwargs)
 
     nets = {key: net}
@@ -216,6 +221,11 @@ class MetaOptimizer(object):
   This optimizer can then itself be optimized to learn optimization on a set of
   tasks.
   """
+  """Wavenet meta optimizer
+
+  Optimizer has a wavenet, takes as input the gradient of the optimizee, return 
+  a step direction.
+  """
 
   def __init__(self, **kwargs):
     """Creates a MetaOptimizer.
@@ -227,6 +237,7 @@ class MetaOptimizer(object):
           parameters to different optimizers (see net_assignments in the
           meta_loss method).
     """
+    # TODO: set up network config for wavenet
     self._nets = None
 
     if not kwargs:
@@ -289,12 +300,14 @@ class MetaOptimizer(object):
 
     # Create the optimizer networks and find the subsets of variables to assign
     # to each optimizer.
+    # TODO: update _make_nets to make wavenets. single net_assignment for network without convolution.
     nets, net_keys, subsets = _make_nets(x, self._config, net_assignments)
 
     # Store the networks so we can save them later.
     self._nets = nets
 
     # Create hidden state for each subset of variables.
+    # TODO: change states to input_queue for wavenet
     state = []
     with tf.name_scope("states"):
       for i, (subset, key) in enumerate(zip(subsets, net_keys)):
@@ -305,6 +318,7 @@ class MetaOptimizer(object):
                for j in subset],
               name="state", trainable=False))
 
+    # TODO: replace state with input queue. Update input queue at every iter
     def update(net, fx, x, state):
       """Parameter and RNN state update."""
       with tf.name_scope("gradients"):
@@ -320,7 +334,7 @@ class MetaOptimizer(object):
       with tf.name_scope("deltas"):
         deltas, state_next = zip(*[net(g, s) for g, s in zip(gradients, state)])
         state_next = list(state_next)
-
+    
       return deltas, state_next
 
     def time_step(t, fx_array, x, state):
@@ -396,6 +410,7 @@ class MetaOptimizer(object):
     Returns:
       namedtuple containing (step, update, reset, fx, x)
     """
+    # TOOD: update info with wavenet archi
     info = self.meta_loss(make_loss, len_unroll, **kwargs)
     optimizer = tf.train.AdamOptimizer(learning_rate)
     step = optimizer.minimize(info.loss)
