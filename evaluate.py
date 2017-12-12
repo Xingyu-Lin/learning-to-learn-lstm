@@ -141,8 +141,8 @@ def main(_):
     # print("x_values: {}".format(x_values))
     # np.savetxt(os.path.join('results', '{}.txt'.format(FLAGS.optimizer)), x_values, fmt='%f')
     # Results.
-    # util.print_stats("Epoch {}".format(FLAGS.num_epochs), total_cost,
-    #                  total_time, FLAGS.num_epochs)
+    util.print_stats("Epoch {}".format(FLAGS.num_epochs), total_cost,
+                      total_time, FLAGS.num_epochs)
 
 
 if __name__ == "__main__":
