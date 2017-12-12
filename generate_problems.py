@@ -10,8 +10,9 @@ for i in range(5):
   problems_w.append(w)
   problems_b.append(b)
 
-w = [[5, 0], [0, 1]]
-b = np.zeros((2, 1))
+w = [[0.5, 0], [0, 0.1]]
+b = np.asarray([0.2, 0.2]).reshape(2, 1)
+assert(b.shape == problems_b[0].shape)
 problems_w.append(w)
 problems_b.append(b)
 

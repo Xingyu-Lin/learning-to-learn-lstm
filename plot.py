@@ -21,16 +21,16 @@ def f_sin(x, y):
 
 
 def f_quad(X1, X2, W, Y):
+  assert (Y.shape == (2, ))
   Z = np.ndarray(shape=X1.shape, dtype=X1.dtype)
   for i in range(X1.shape[0]):
     for j in range(X1.shape[1]):
-      Z[i, j] = LA.norm((W.dot(np.asarray([X1[i, j], X2[i, j]], dtype=X1.dtype)) - Y))
-      #Z[i, j] = LA.norm((W @ np.asarray([X1[i, j], X2[i, j]], dtype=X1.dtype) - Y))
+      Z[i, j] = np.sum((W.dot(np.asarray([X1[i, j], X2[i, j]], dtype=X1.dtype)).T - Y) ** 2)
   return Z
 
 
 def main():
-  optimizers = ['L2L', 'Adam', 'Momentum', 'SGD', 'NAG', 'RMSProp']
+  optimizers = ['Adam', 'Momentum', 'SGD', 'NAG', 'RMSProp']
 
   problem_path = './problems/quadratic.npz'
   npzfile = np.load(problem_path)
@@ -43,15 +43,17 @@ def main():
     x[optimizer] = np.load(osp.join('./results', optimizer + '.npy'))
 
   for prob_idx in range(prob_num):
-    plt.figure(figsize=(10, 6))
+    fig = plt.figure(figsize=(10, 6))
     for optimizer in optimizers:
       obj[optimizer] = list(
-        map(lambda x: LA.norm(problems_w[prob_idx].dot(x) - problems_b[prob_idx]) ** 2,
+        map(lambda x: np.sum((problems_w[prob_idx].dot(x) - problems_b[prob_idx].squeeze()) ** 2),
             x[optimizer][prob_idx]))
       plt.plot(obj[optimizer], label=optimizer)
     plt.legend(loc='upper right')
     plt.xlabel('number of iterations')
     plt.ylabel('objective value')
+    ax = fig.add_subplot(1, 1, 1)
+    ax.set_yscale("log")
     plt.savefig('./figs/loss_prob_{}.png'.format(prob_idx))
 
     # X = {}  # dictionary to store data
@@ -70,7 +72,7 @@ def main():
     # # plot level set and trajectory for SGD
     # W = 0.5 * np.eye(2)
     # Y = 0.5 * np.ones(2)
-  optimizer = 'SGD'
+  optimizer = 'L2L'
   for prob_idx in range(prob_num):
     W = problems_w[prob_idx]
     Y = problems_b[prob_idx]
@@ -85,19 +87,18 @@ def main():
     x1 = np.linspace(t_min, t_max, num=50)
     x2 = np.linspace(t_min, t_max, num=50)
     X1, X2 = np.meshgrid(x1, x2)
-    Z = f_quad(X1, X2, W, Y)
-    plt.figure()
-    plt.contourf(X1, X2, Z, 100, cmap='RdGy')
+    Z = f_quad(X1, X2, W, Y.squeeze())
+    fig = plt.figure()
+    plt.contour(X1, X2, Z, 20)
     plt.colorbar()
     plt.axes().set_aspect('equal')
     plt.axis([t_min, t_max, t_min, t_max])
 
-    plt.scatter(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], s=30, edgecolors='g', facecolors='none',
+    plt.scatter(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], s=30, edgecolors='r', facecolors='none',
                 marker='o')
-    plt.plot(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], color='g')
+    plt.plot(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], color='r')
     plt.savefig('./figs/contour_{}.png'.format(prob_idx))
 
 
 if __name__ == "__main__":
   main()
-
