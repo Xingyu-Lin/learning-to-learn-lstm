@@ -21,7 +21,7 @@ def f_sin(x, y):
 
 
 def f_quad(X1, X2, W, Y):
-  assert (Y.shape == (2, ))
+  assert (Y.shape == (2,))
   Z = np.ndarray(shape=X1.shape, dtype=X1.dtype)
   for i in range(X1.shape[0]):
     for j in range(X1.shape[1]):
@@ -72,32 +72,39 @@ def main():
     # # plot level set and trajectory for SGD
     # W = 0.5 * np.eye(2)
     # Y = 0.5 * np.ones(2)
-  optimizer = 'L2L'
-  for prob_idx in range(prob_num):
-    W = problems_w[prob_idx]
-    Y = problems_b[prob_idx]
-    minx = np.min(x[optimizer][prob_idx][:, 0])
-    miny = np.min(x[optimizer][prob_idx][:, 1])
-    maxx = np.max(x[optimizer][prob_idx][:, 0])
-    maxy = np.max(x[optimizer][prob_idx][:, 1])
-    min_plot = min(minx, miny)
-    max_plot = max(maxx, maxy)
-    t_min = min_plot - 0.3 * (max_plot - min_plot)
-    t_max = max_plot + 0.3 * (max_plot - min_plot)
-    x1 = np.linspace(t_min, t_max, num=50)
-    x2 = np.linspace(t_min, t_max, num=50)
-    X1, X2 = np.meshgrid(x1, x2)
-    Z = f_quad(X1, X2, W, Y.squeeze())
-    fig = plt.figure()
-    plt.contour(X1, X2, Z, 20)
-    plt.colorbar()
-    plt.axes().set_aspect('equal')
-    plt.axis([t_min, t_max, t_min, t_max])
 
-    plt.scatter(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], s=30, edgecolors='r', facecolors='none',
-                marker='o')
-    plt.plot(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], color='r')
-    plt.savefig('./figs/contour_{}.png'.format(prob_idx))
+  optimizer = 'Momentum'
+
+
+
+  n = len(optimizers)
+  for prob_idx in range(prob_num):
+    fig = plt.figure(figsize=(12, 8))
+    for i, optimizer in enumerate(optimizers):
+      W = problems_w[prob_idx]
+      Y = problems_b[prob_idx]
+      minx = np.min(x[optimizer][prob_idx][:, 0])
+      miny = np.min(x[optimizer][prob_idx][:, 1])
+      maxx = np.max(x[optimizer][prob_idx][:, 0])
+      maxy = np.max(x[optimizer][prob_idx][:, 1])
+      min_plot = min(minx, miny)
+      max_plot = max(maxx, maxy)
+      t_min = min_plot - 0.3 * (max_plot - min_plot)
+      t_max = max_plot + 0.3 * (max_plot - min_plot)
+      x1 = np.linspace(t_min, t_max, num=50)
+      x2 = np.linspace(t_min, t_max, num=50)
+      X1, X2 = np.meshgrid(x1, x2)
+      Z = f_quad(X1, X2, W, Y.squeeze())
+      ax = fig.add_subplot(2, (n+1)/2, i+1)
+      ax.contour(X1, X2, Z, 20)
+      ax.set_aspect('equal')
+      ax.axis([t_min, t_max, t_min, t_max])
+      ax.set_title(optimizer)
+      ax.scatter(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], s=30, edgecolors='r', facecolors='none',
+                  marker='o')
+      ax.plot(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], color='r')
+  #plt.colorbar()
+      plt.savefig('./figs/contour_{}.png'.format(prob_idx))
 
 
 if __name__ == "__main__":
