@@ -16,17 +16,8 @@ import matplotlib.mlab as mlab
 import matplotlib
 
 
-def f_sin(x, y):
+def f(x, y):
   return np.sin(x) ** 10 + np.cos(10 + y * x) * np.cos(x)
-
-
-def f_quad(X1, X2, W, Y):
-  Z = np.ndarray(shape=X1.shape, dtype=X1.dtype)
-  for i in range(X1.shape[0]):
-    for j in range(X1.shape[1]):
-      Z[i, j] = LA.norm((W.dot(np.asarray([X1[i, j], X2[i, j]], dtype=X1.dtype)) - Y))
-      #Z[i, j] = LA.norm((W @ np.asarray([X1[i, j], X2[i, j]], dtype=X1.dtype) - Y))
-  return Z
 
 
 def main():
@@ -46,8 +37,7 @@ def main():
     plt.figure(figsize=(10, 6))
     for optimizer in optimizers:
       obj[optimizer] = list(
-        map(lambda x: LA.norm(problems_w[prob_idx].dot(x) - problems_b[prob_idx]) ** 2,
-            x[optimizer][prob_idx]))
+        map(lambda x: LA.norm(problems_w[prob_idx].dot(x) - np.transpose(problems_b[prob_idx])) ** 2, x[optimizer][prob_idx]))
       plt.plot(obj[optimizer], label=optimizer)
     plt.legend(loc='upper right')
     plt.xlabel('number of iterations')
@@ -70,10 +60,13 @@ def main():
     # # plot level set and trajectory for SGD
     # W = 0.5 * np.eye(2)
     # Y = 0.5 * np.ones(2)
-  optimizer = 'SGD'
+  optimizer = 'L2L'
   for prob_idx in range(prob_num):
     W = problems_w[prob_idx]
     Y = problems_b[prob_idx]
+    A = W.transpose().dot(W)
+    b = 2 * W.transpose().dot(Y)
+    delta = 0.001
     minx = np.min(x[optimizer][prob_idx][:, 0])
     miny = np.min(x[optimizer][prob_idx][:, 1])
     maxx = np.max(x[optimizer][prob_idx][:, 0])
@@ -82,12 +75,13 @@ def main():
     max_plot = max(maxx, maxy)
     t_min = min_plot - 0.3 * (max_plot - min_plot)
     t_max = max_plot + 0.3 * (max_plot - min_plot)
-    x1 = np.linspace(t_min, t_max, num=50)
-    x2 = np.linspace(t_min, t_max, num=50)
+    x1 = np.arange(t_min, t_max, delta)
+    x2 = np.arange(t_min, t_max, delta)
     X1, X2 = np.meshgrid(x1, x2)
-    Z = f_quad(X1, X2, W, Y)
+    F = A[0, 0] * X1 ** 2 + A[1, 1] * X2 ** 2 + (A[0, 1] + A[1, 0]) * X1 * X2 - b[0] * X1 - b[1] * X2 + LA.norm(
+      Y) ** 2
     plt.figure()
-    plt.contourf(X1, X2, Z, 100, cmap='RdGy')
+    plt.contourf(X1, X2, F, 100, cmap='RdGy')
     plt.colorbar()
     plt.axes().set_aspect('equal')
     plt.axis([t_min, t_max, t_min, t_max])
@@ -100,4 +94,3 @@ def main():
 
 if __name__ == "__main__":
   main()
-
