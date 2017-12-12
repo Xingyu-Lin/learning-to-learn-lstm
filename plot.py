@@ -100,7 +100,7 @@ def main():
       ax.set_aspect('equal')
       ax.axis([t_min, t_max, t_min, t_max])
       ax.set_title(optimizer)
-      ax.scatter(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], s=30, edgecolors='r', facecolors='none',
+      ax.scatter(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], s=5, edgecolors='r', facecolors='none',
                   marker='o')
       ax.plot(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], color='r')
   #plt.colorbar()
