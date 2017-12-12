@@ -98,12 +98,13 @@ def get_config(problem_name, path=None):
     }}
     net_assignments = None
   # Luna: Add problem for quadratic-wav
+  # TODO: change batch_size back to default for training
   elif problem_name == "quadratic-wav":
-    problem = problems.quadratic(batch_size=1, num_dims=2)
+    problem = problems.quadratic(batch_size=1, num_dims=10)
     net_config = {"cw-wav": {
         "net": "CoordinateWiseWaveNet",
-        "net_options": None, 
-        "net_path": get_net_path("cw", path)
+        "net_options": {"num_layers": 4}, 
+        "net_path": get_net_path("cw-wav", path)
     }}
     net_assignments = None
   

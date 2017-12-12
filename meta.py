@@ -138,6 +138,8 @@ def _make_with_custom_variables(func, variables):
   variables = collections.deque(variables)
 
   def custom_getter(getter, name, **kwargs):
+    if kwargs["trainable"]:
+      return variables.popleft()
     else:
       kwargs["reuse"] = True
       return getter(name, **kwargs)
@@ -174,21 +176,22 @@ def _make_nets(variables, config, net_assignments):
   name_to_index = dict((v.name.split(":")[0], i)
                        for i, v in enumerate(variables))
 
-  # TODO: use default net_assignment for wavenet. Only test on quadratic for now.
   if net_assignments is None:
     if len(config) != 1:
       raise ValueError("Default net_assignments can only be used if there is "
                        "a single net config.")
 
     with tf.variable_scope("vars_optimizer"):
-      # Luna: key=cw-wav
-      # kwargs:
-      # 103         "net": "CoordinateWiseWaveNet",
-      # 104         "net_options": None,
-      # 105         "net_path": get_net_path("cw", path)
+        #  elif problem_name == "quadratic-wav":
+        #    problem = problems.quadratic(batch_size=1, num_dims=2)
+        #    net_config = {"cw-wav": {
+        #        "net": "CoordinateWiseWaveNet",
+        #        "net_options": {"num_layers": 4}, 
+        #        "net_path": get_net_path("cw-wav", path)
+        #    }}
       key = next(iter(config))
       kwargs = config[key]
-      # TODO: add wavenet to network factory
+      # Return; CoordinateWiseWaveNet(num_layers=4)
       net = networks.factory(**kwargs)
 
     nets = {key: net}
@@ -231,6 +234,7 @@ class MetaOptimizer(object):
     """Creates a MetaOptimizer.
 
     Args:
+      **kwargs: net_config defined in util.py 
       **kwargs: A set of keyword arguments mapping network identifiers (the
           keys) to parameters that will be passed to networks.Factory (see docs
           for more info).  These can be used to assign different optimizee
@@ -300,65 +304,68 @@ class MetaOptimizer(object):
 
     # Create the optimizer networks and find the subsets of variables to assign
     # to each optimizer.
-    # TODO: update _make_nets to make wavenets. single net_assignment for network without convolution.
+    # nets = {cw-wav: CoordinateWiseWaveNet}
+    # keys = [cw-wav]
+    # subsets = [range(len(variables))]
     nets, net_keys, subsets = _make_nets(x, self._config, net_assignments)
 
     # Store the networks so we can save them later.
     self._nets = nets
 
-    # Create hidden state for each subset of variables.
-    # TODO: change states to input_queue for wavenet
-    state = []
-    with tf.name_scope("states"):
+    # Create input queues for each subset of variables.
+    # One element in input_queues essentially
+    input_queues = []
+    # input_queues[0]: a list of length batch_size, each element is an initialized input_queue.
+    with tf.name_scope("input_queues"):
       for i, (subset, key) in enumerate(zip(subsets, net_keys)):
         net = nets[key]
-        with tf.name_scope("state_{}".format(i)):
-          state.append(_nested_variable(
-              [net.initial_state_for_inputs(x[j], dtype=tf.float32)
+        with tf.name_scope("input_queues_{}".format(i)):
+          input_queues.append(_nested_variable(
+              [net.initial_input_queues(x[j])
                for j in subset],
-              name="state", trainable=False))
+              name="input_queues", trainable=False))
 
-    # TODO: replace state with input queue. Update input queue at every iter
-    def update(net, fx, x, state):
-      """Parameter and RNN state update."""
+    def update(net, fx, x, input_queues):
+      """Parameter and WaveNet state update."""
       with tf.name_scope("gradients"):
         gradients = tf.gradients(fx, x)
-
         # Stopping the gradient here corresponds to what was done in the
         # original L2L NIPS submission. However it looks like things like
         # BatchNorm, etc. don't support second-derivatives so we still need
         # this term.
         if not second_derivatives:
           gradients = [tf.stop_gradient(g) for g in gradients]
+        # gradients[0].get_shape() == x.get_shape() == batch_size x num_dims
 
       with tf.name_scope("deltas"):
-        deltas, state_next = zip(*[net(g, s) for g, s in zip(gradients, state)])
-        state_next = list(state_next)
+        deltas, input_queues_next = zip(*[net(g, s) for g, s in zip(gradients, input_queues)])
+        input_queues_next = list(input_queues_next)
     
-      return deltas, state_next
+      return deltas, input_queues_next
 
-    def time_step(t, fx_array, x, state):
+    def time_step(t, fx_array, x, input_queues):
       """While loop body."""
       x_next = list(x)
-      state_next = []
+      input_queues_next = []
 
       with tf.name_scope("fx"):
         fx = _make_with_custom_variables(make_loss, x)
         fx_array = fx_array.write(t, fx)
 
       with tf.name_scope("dx"):
-        for subset, key, s_i in zip(subsets, net_keys, state):
+        for subset, key, s_i in zip(subsets, net_keys, input_queues):
+        # iterate through all trainiable optimizee variables
           x_i = [x[j] for j in subset]
           deltas, s_i_next = update(nets[key], fx, x_i, s_i)
 
           for idx, j in enumerate(subset):
             x_next[j] += deltas[idx]
-          state_next.append(s_i_next)
+          input_queues_next.append(s_i_next)
 
       with tf.name_scope("t_next"):
         t_next = t + 1
 
-      return t_next, fx_array, x_next, state_next
+      return t_next, fx_array, x_next, input_queues_next 
 
     # Define the while loop.
     fx_array = tf.TensorArray(tf.float32, size=len_unroll + 1,
@@ -366,7 +373,7 @@ class MetaOptimizer(object):
     _, fx_array, x_final, s_final = tf.while_loop(
         cond=lambda t, *_: t < len_unroll,
         body=time_step,
-        loop_vars=(0, fx_array, x, state),
+        loop_vars=(0, fx_array, x, input_queues),
         parallel_iterations=1,
         swap_memory=True,
         name="unroll")
@@ -375,20 +382,21 @@ class MetaOptimizer(object):
       fx_final = _make_with_custom_variables(make_loss, x_final)
       fx_array = fx_array.write(len_unroll, fx_final)
 
+    # sum of fx for len_unroll rollouts
     loss = tf.reduce_sum(fx_array.stack(), name="loss")
 
-    # Reset the state; should be called at the beginning of an epoch.
+    # Reset the input_queue; should be called at the beginning of an epoch.
     with tf.name_scope("reset"):
-      variables = (nest.flatten(state) +
+      variables = (nest.flatten(input_queues) +
                    x + constants)
       # Empty array as part of the reset process.
       reset = [tf.variables_initializer(variables), fx_array.close()]
 
-    # Operator to update the parameters and the RNN state after our loop, but
+    # Operator to update the parameters and the input_queues after our loop, but
     # during an epoch.
     with tf.name_scope("update"):
       update = (nest.flatten(_nested_assign(x, x_final)) +
-                nest.flatten(_nested_assign(state, s_final)))
+                nest.flatten(_nested_assign(input_queues, s_final)))
 
     # Log internal variables.
     for k, net in nets.items():
@@ -397,6 +405,13 @@ class MetaOptimizer(object):
 
     return MetaLoss(loss, update, reset, fx_final, x_final)
 
+# meta_minimize
+#  minimize = optimizer.meta_minimize(
+#      problem, FLAGS.unroll_length (20),
+#      learning_rate=FLAGS.learning_rate,
+#      net_assignments=net_assignments,
+#      second_derivatives=FLAGS.second_derivatives)
+#  step, update, reset, cost_op, _ = minimize
   def meta_minimize(self, make_loss, len_unroll, learning_rate=0.01, **kwargs):
     """Returns an operator minimizing the meta-loss.
 

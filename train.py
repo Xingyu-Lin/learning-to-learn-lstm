@@ -58,18 +58,17 @@ def main(_):
       os.mkdir(FLAGS.save_path)
 
   # Problem.
-  # TODO: renew config for wavenet
   problem, net_config, net_assignments = util.get_config(FLAGS.problem)
 
   # Optimizer setup.
   optimizer = meta.MetaOptimizer(**net_config)
-  # TODO: update meta minimzation operators for wavenet
   minimize = optimizer.meta_minimize(
       problem, FLAGS.unroll_length,
       learning_rate=FLAGS.learning_rate,
       net_assignments=net_assignments,
       second_derivatives=FLAGS.second_derivatives)
-  step, update, reset, cost_op, _ = minimize
+  # MetaStep(step, update, reset, fx_final, x_final)
+  step, update, reset, cost_op, x_op = minimize
 
   with ms.MonitoredSession() as sess:
     # Prevent accidental changes to the graph.
@@ -80,7 +79,7 @@ def main(_):
     total_cost = 0
     for e in xrange(FLAGS.num_epochs):
       # Training.
-      time, cost = util.run_epoch(sess, cost_op, [update, step], reset,
+      time, cost, _ = util.run_epoch(sess, cost_op, x_op, [update, step], reset,
                                   num_unrolls)
       total_time += time
       total_cost += cost
@@ -97,7 +96,7 @@ def main(_):
         eval_cost = 0
         eval_time = 0
         for _ in xrange(FLAGS.evaluation_epochs):
-          time, cost = util.run_epoch(sess, cost_op, [update], reset,
+          time, cost, _ = util.run_epoch(sess, cost_op, x_op, [update], reset,
                                       num_unrolls)
           eval_time += time
           eval_cost += cost

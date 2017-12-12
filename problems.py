@@ -88,12 +88,14 @@ def quadratic(batch_size=1, num_dims=10, stddev=0.01, dtype=tf.float32):
     w = tf.get_variable("w",
                         shape=[batch_size, num_dims, num_dims],
                         dtype=dtype,
-                        initializer=tf.constant_initializer(np.array([[0.4, 0.6], [0.6, 0.5]])),
+                        initializer=tf.random_uniform_initializer(),
+                        #initializer=tf.constant_initializer(np.array([[0.4, 0.6], [0.6, 0.5]])),
                         trainable=False)
     y = tf.get_variable("y",
                         shape=[batch_size, num_dims],
                         dtype=dtype,
-                        initializer=tf.constant_initializer(np.array([0.1, 0.9])),
+                        initializer=tf.random_uniform_initializer(),
+                        #initializer=tf.constant_initializer(np.array([0.1, 0.9])),
                         trainable=False)
 
     product = tf.squeeze(tf.matmul(w, tf.expand_dims(x, -1)))

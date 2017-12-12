@@ -26,6 +26,7 @@ import numpy as np
 import six
 import sonnet as snt
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 
 import preprocess
 
@@ -153,17 +154,18 @@ def _get_layer_initializers(initializers, layer_name, fields):
 # TODO: construct wavenet according to this
 # WaveNet does not inherit from the RNN Network metaclass.
 # Needs to implement all necessary functions
-class WaveNet():
-    """WaveNet without dilation"""
+# Inherits the sonnet.AbstractModule to use its functionality
+class WaveNet(snt.AbstractModule):
+  """WaveNet without dilation"""
 
-  def __init__(self, output_size, layers, preprocess_name='identity',
+  def __init__(self, num_layers=4, preprocess_name='identity',
                preproess_options=None, scale=1.0, initializer=None,
                name='wavenet'):
     """Creates an instance of 'WaveNet'.
 
     Args:
       output_size: Ouptput sizes of the final linear layer (TODO: might not need this layer?)
-      layers: Number of layers for WaveNet
+      num_layers: Number of layers for WaveNet. Excluding final output layer.
       preprocess_name: Gradient preprocessing class name (in `l2l.preprocess` or
           tf modules). Default is `tf.identity`.
       preprocess_options: Gradient preprocessing options.
@@ -173,8 +175,12 @@ class WaveNet():
           "zeros" will be converted to tf.zeros_initializer).
       name: Module name.
     """
-    self._output_size = output_size
+    super(WaveNet, self).__init__(name=name)
+
     self._scale = scale
+    self._num_layers = num_layers
+    # length of input_queue
+    self._input_length = 2**self._num_layers
 
     if hasattr(preprocess, preprocess_name):
       preprocess_class = getattr(preprocess, preprocess_name)
@@ -182,30 +188,88 @@ class WaveNet():
     else:
       self._preprocess = getattr(tf, preprocess_name)
 
-  # TODO: build WaveNet graph
   def _build(self, inputs, input_queue):
     """Connects the `WaveNet` module into the graph.
 
     Args:
-      inputs: 2D `Tensor` ([batch_size, input_size]).
-      input_queue: 3D `Tensor` [batch_size, input_length, input_size]
+      inputs: 2D `Tensor` ([batch_size, 1]). only one gradient for one coordinate
+      input_queue: 3D `Tensor` [batch_size, input_length, 2]
     Returns:
       `Tensor` shaped as `inputs`.
     """
     # Adds preprocessing dimension and preprocess.
-    inputs = self._preprocess(tf.expand_dims(inputs, -1))
+    batch_size = inputs.get_shape().as_list()[0]
+    inputs = self._preprocess(inputs)
+    # inputs.get_shape = batch_size x input_size
+    # input_size depends on preprocessing
     # Incorporates preprocessing into data dimension.
-    inputs = tf.reshape(inputs, [inputs.get_shape().as_list()[0], 1, -1])
+    inputs = tf.reshape(inputs, [batch_size, 1, -1])
     # update input queue with new input
-    new_input_queue = tf.slice(inputs, [0, 0, 0], [-1, self._input_length-1, -1])
-    new_input_queue = tf.concatenate([new_input_queue, inputs], axis=1)
+    new_input_queue = tf.slice(input_queue, [0, 0, 0], [-1, self._input_length-1, -1])
+    new_input_queue = tf.concat([new_input_queue, inputs], axis=1)
+    output = tf.identity(new_input_queue)
+    output = tf.reshape(output, [batch_size, self._input_length, -1])
     # WaveNet here
-    output = self._wavenet_model(new_input_queue)
-    return self._linear(output) * self._scale, new_input_queue
+    # output initial size: batch_size x _input_length x 2
+    for i in range(self._num_layers):
+      name = "wavenet_{}".format(i)
+      output = slim.conv2d(output, num_outputs=16*(i+1) ,kernel_size=[2], stride=2, padding='VALID')
+    output = slim.fully_connected(output, 1, activation_fn=None)
+    # output final size: batch_size x 1 x 1
+    return output * self._scale, new_input_queue
 
- 
+  def initial_input_queue(self, inputs):
+    batch_size = inputs.get_shape().as_list()[0]
+    inputs = self._preprocess(inputs)
+    # inputs: batch_size x input_size
+    inputs = tf.reshape(inputs, [batch_size, 1, -1])
+    return tf.tile(inputs, [1, self._input_length, 1])
+    # outputs: batch_size x self._input_length x input_size
 
-        
+       
+class CoordinateWiseWaveNet(WaveNet):
+  """Coordinate-wise `WaveNet`."""
+
+  def __init__(self, name="cw_wavenet", **kwargs):
+    """Creates an instance of `CoordinateWiseWaveNet`.
+
+    Args:
+      name: Module name.
+      **kwargs: Additional `WaveNet` args.
+    """
+    super(CoordinateWiseWaveNet, self).__init__(name=name, **kwargs)
+
+  def _reshape_inputs(self, inputs):
+    # Luna: inputs reshaped to [batch_size * num_coords x 1].
+    # Makes sense as same network used across batch and coords
+    return tf.reshape(inputs, [-1, 1])
+
+  def _build(self, inputs, input_queues):
+    """Connects the CoordinateWiseWaveNet module into the graph
+
+    Args:
+      inputs: batch_size x num_coords. gradients for all coords.
+      input_queues: batch_size * num_coords x input_length x 1
+
+    Returns:
+      `Tensor` shaped as `inputs`.
+    """
+    input_shape = inputs.get_shape().as_list()
+    reshaped_inputs = self._reshape_inputs(inputs)
+    # reshaped_inputs.get_shape = batch_size * num_coords x 1
+
+    build_fn = super(CoordinateWiseWaveNet, self)._build
+    # TODO: build_fn is where forward graph takes place
+    output, new_input_queues = build_fn(reshaped_inputs, input_queues)
+
+    # Recover original shape.
+    return tf.reshape(output, input_shape), new_input_queues
+
+  def initial_input_queues(self, inputs):
+    reshaped_inputs = self._reshape_inputs(inputs)
+    return super(CoordinateWiseWaveNet, self).initial_input_queue(
+        reshaped_inputs)
+
 
 class StandardDeepLSTM(Network):
   """LSTM layers with a Linear layer on top."""
@@ -262,9 +326,12 @@ class StandardDeepLSTM(Network):
       `Tensor` shaped as `inputs`.
     """
     # Adds preprocessing dimension and preprocess.
+    # inputs.get_shape() = batch_size x 1
     inputs = self._preprocess(tf.expand_dims(inputs, -1))
+    # inputs.get_shape() = batch_size x 1 x 2
     # Incorporates preprocessing into data dimension.
     inputs = tf.reshape(inputs, [inputs.get_shape().as_list()[0], -1])
+    # inputs.get_shape = batch-size x 2
     output, next_state = self._rnn(inputs, prev_state)
     return self._linear(output) * self._scale, next_state
 
