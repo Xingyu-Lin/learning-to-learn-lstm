@@ -24,7 +24,6 @@ import tensorflow as tf
 
 
 class Clamp(snt.AbstractModule):
-
   def __init__(self, min_value=None, max_value=None, name="clamp"):
     super(Clamp, self).__init__(name=name)
     self._min = min_value

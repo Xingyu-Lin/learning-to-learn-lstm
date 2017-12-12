@@ -51,11 +51,11 @@ class L2LTest(tf.test.TestCase):
     """Tests reproducibility of Torch results."""
     problem = problems.simple()
     optimizer = meta.MetaOptimizer(net=dict(
-        net="CoordinateWiseDeepLSTM",
-        net_options={
-            "layers": (),
-            "initializer": "zeros"
-        }))
+      net="CoordinateWiseDeepLSTM",
+      net_options={
+        "layers": (),
+        "initializer": "zeros"
+      }))
     minimize_ops = optimizer.meta_minimize(problem, 5)
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
@@ -69,51 +69,51 @@ class L2LTest(tf.test.TestCase):
     self.assertAlmostEqual(final_x[0], torch_final_x, places=4)
 
   @parameterized.expand([
-      # Shared optimizer.
-      (
-          None,
-          {
-              "net": {
-                  "net": "CoordinateWiseDeepLSTM",
-                  "net_options": {"layers": (1, 1,)}
-              }
-          }
-      ),
-      # Explicit sharing.
-      (
-          [("net", ["x_0", "x_1"])],
-          {
-              "net": {
-                  "net": "CoordinateWiseDeepLSTM",
-                  "net_options": {"layers": (1,)}
-              }
-          }
-      ),
-      # Different optimizers.
-      (
-          [("net1", ["x_0"]), ("net2", ["x_1"])],
-          {
-              "net1": {
-                  "net": "CoordinateWiseDeepLSTM",
-                  "net_options": {"layers": (1,)}
-              },
-              "net2": {"net": "Adam"}
-          }
-      ),
-      # Different optimizers for the same variable.
-      (
-          [("net1", ["x_0"]), ("net2", ["x_0"])],
-          {
-              "net1": {
-                  "net": "CoordinateWiseDeepLSTM",
-                  "net_options": {"layers": (1,)}
-              },
-              "net2": {
-                  "net": "CoordinateWiseDeepLSTM",
-                  "net_options": {"layers": (1,)}
-              }
-          }
-      ),
+    # Shared optimizer.
+    (
+      None,
+      {
+        "net": {
+          "net": "CoordinateWiseDeepLSTM",
+          "net_options": {"layers": (1, 1,)}
+        }
+      }
+    ),
+    # Explicit sharing.
+    (
+      [("net", ["x_0", "x_1"])],
+      {
+        "net": {
+          "net": "CoordinateWiseDeepLSTM",
+          "net_options": {"layers": (1,)}
+        }
+      }
+    ),
+    # Different optimizers.
+    (
+      [("net1", ["x_0"]), ("net2", ["x_1"])],
+      {
+        "net1": {
+          "net": "CoordinateWiseDeepLSTM",
+          "net_options": {"layers": (1,)}
+        },
+        "net2": {"net": "Adam"}
+      }
+    ),
+    # Different optimizers for the same variable.
+    (
+      [("net1", ["x_0"]), ("net2", ["x_0"])],
+      {
+        "net1": {
+          "net": "CoordinateWiseDeepLSTM",
+          "net_options": {"layers": (1,)}
+        },
+        "net2": {
+          "net": "CoordinateWiseDeepLSTM",
+          "net_options": {"layers": (1,)}
+        }
+      }
+    ),
   ])
   def testMultiOptimizer(self, net_assignments, net_config):
     """Tests different variable->net mappings in multi-optimizer problem."""
@@ -129,8 +129,8 @@ class L2LTest(tf.test.TestCase):
     """Tests second derivatives for simple problem."""
     problem = problems.simple()
     optimizer = meta.MetaOptimizer(net=dict(
-        net="CoordinateWiseDeepLSTM",
-        net_options={"layers": ()}))
+      net="CoordinateWiseDeepLSTM",
+      net_options={"layers": ()}))
     minimize_ops = optimizer.meta_minimize(problem, 3,
                                            second_derivatives=True)
     with self.test_session() as sess:
@@ -140,6 +140,7 @@ class L2LTest(tf.test.TestCase):
   def testConvolutional(self):
     """Tests L2L applied to problem with convolutions."""
     kernel_shape = 4
+
     def convolutional_problem():
       conv = snt.Conv2D(output_channels=1,
                         kernel_shape=kernel_shape,
@@ -149,18 +150,18 @@ class L2LTest(tf.test.TestCase):
       return tf.reduce_sum(output)
 
     net_config = {
-        "conv": {
-            "net": "KernelDeepLSTM",
-            "net_options": {
-                "kernel_shape": [kernel_shape] * 2,
-                "layers": (5,)
-            },
+      "conv": {
+        "net": "KernelDeepLSTM",
+        "net_options": {
+          "kernel_shape": [kernel_shape] * 2,
+          "layers": (5,)
         },
+      },
     }
     optimizer = meta.MetaOptimizer(**net_config)
     minimize_ops = optimizer.meta_minimize(
-        convolutional_problem, 3,
-        net_assignments=[("conv", ["conv/w"])]
+      convolutional_problem, 3,
+      net_assignments=[("conv", ["conv/w"])]
     )
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
@@ -168,20 +169,21 @@ class L2LTest(tf.test.TestCase):
 
   def testWhileLoopProblem(self):
     """Tests L2L applied to problem with while loop."""
+
     def while_loop_problem():
       x = tf.get_variable("x", shape=[], initializer=tf.ones_initializer())
 
       # Strange way of squaring the variable.
       _, x_squared = tf.while_loop(
-          cond=lambda t, _: t < 1,
-          body=lambda t, x: (t + 1, x * x),
-          loop_vars=(0, x),
-          name="loop")
+        cond=lambda t, _: t < 1,
+        body=lambda t, x: (t + 1, x * x),
+        loop_vars=(0, x),
+        name="loop")
       return x_squared
 
     optimizer = meta.MetaOptimizer(net=dict(
-        net="CoordinateWiseDeepLSTM",
-        net_options={"layers": ()}))
+      net="CoordinateWiseDeepLSTM",
+      net_options={"layers": ()}))
     minimize_ops = optimizer.meta_minimize(while_loop_problem, 3)
     with self.test_session() as sess:
       sess.run(tf.global_variables_initializer())
@@ -199,8 +201,8 @@ class L2LTest(tf.test.TestCase):
     # Original optimizer.
     with tf.Graph().as_default() as g1:
       optimizer = meta.MetaOptimizer(net=dict(
-          net="CoordinateWiseDeepLSTM",
-          net_options=net_options))
+        net="CoordinateWiseDeepLSTM",
+        net_options=net_options))
       minimize_ops = optimizer.meta_minimize(problem, 3)
 
     with self.test_session(graph=g1) as sess:
@@ -218,9 +220,9 @@ class L2LTest(tf.test.TestCase):
     # Load optimizer and retrain in a new session.
     with tf.Graph().as_default() as g2:
       optimizer = meta.MetaOptimizer(net=dict(
-          net="CoordinateWiseDeepLSTM",
-          net_options=net_options,
-          net_path=net_path))
+        net="CoordinateWiseDeepLSTM",
+        net_options=net_options,
+        net_path=net_path))
       minimize_ops = optimizer.meta_minimize(problem, 3)
 
     with self.test_session(graph=g2) as sess:

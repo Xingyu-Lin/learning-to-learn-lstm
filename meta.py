@@ -80,6 +80,7 @@ def _nested_variable(init, name=None, trainable=False):
 def _wrap_variable_creation(func, custom_getter):
   """Provides a custom getter for all variable creations."""
   original_get_variable = tf.get_variable
+
   def custom_get_variable(*args, **kwargs):
     if hasattr(kwargs, "custom_getter"):
       raise AttributeError("Custom getters are not supported for optimizee "
@@ -233,14 +234,14 @@ class MetaOptimizer(object):
       # Use a default coordinatewise network if nothing is given. this allows
       # for no network spec and no assignments.
       self._config = {
-          "coordinatewise": {
-              "net": "CoordinateWiseDeepLSTM",
-              "net_options": {
-                  "layers": (20, 20),
-                  "preprocess_name": "LogAndSign",
-                  "preprocess_options": {"k": 5},
-                  "scale": 0.01,
-              }}}
+        "coordinatewise": {
+          "net": "CoordinateWiseDeepLSTM",
+          "net_options": {
+            "layers": (20, 20),
+            "preprocess_name": "LogAndSign",
+            "preprocess_options": {"k": 5},
+            "scale": 0.01,
+          }}}
     else:
       self._config = kwargs
 
@@ -301,9 +302,9 @@ class MetaOptimizer(object):
         net = nets[key]
         with tf.name_scope("state_{}".format(i)):
           state.append(_nested_variable(
-              [net.initial_state_for_inputs(x[j], dtype=tf.float32)
-               for j in subset],
-              name="state", trainable=False))
+            [net.initial_state_for_inputs(x[j], dtype=tf.float32)
+             for j in subset],
+            name="state", trainable=False))
 
     def update(net, fx, x, state):
       """Parameter and RNN state update."""
@@ -350,12 +351,12 @@ class MetaOptimizer(object):
     fx_array = tf.TensorArray(tf.float32, size=len_unroll + 1,
                               clear_after_read=False)
     _, fx_array, x_final, s_final = tf.while_loop(
-        cond=lambda t, *_: t < len_unroll,
-        body=time_step,
-        loop_vars=(0, fx_array, x, state),
-        parallel_iterations=1,
-        swap_memory=True,
-        name="unroll")
+      cond=lambda t, *_: t < len_unroll,
+      body=time_step,
+      loop_vars=(0, fx_array, x, state),
+      parallel_iterations=1,
+      swap_memory=True,
+      name="unroll")
 
     with tf.name_scope("fx"):
       fx_final = _make_with_custom_variables(make_loss, x_final)

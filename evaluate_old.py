@@ -42,37 +42,37 @@ flags.DEFINE_float("learning_rate", 0.001, "Learning rate.")
 
 
 def main(_):
-    # Configuration.
-    num_unrolls = FLAGS.num_steps
+  # Configuration.
+  num_unrolls = FLAGS.num_steps
 
-    if FLAGS.seed:
-        tf.set_random_seed(FLAGS.seed)
+  if FLAGS.seed:
+    tf.set_random_seed(FLAGS.seed)
 
-    # Problem.
-    problem, net_config, net_assignments = util.get_config(FLAGS.problem,
-                                                           FLAGS.path)
+  # Problem.
+  problem, net_config, net_assignments = util.get_config(FLAGS.problem,
+                                                         FLAGS.path)
 
-    optimizer = meta.MetaOptimizer(**net_config)
-    meta_loss = optimizer.meta_loss(problem, 1, net_assignments=net_assignments)
-    _, update, reset, cost_op, _ = meta_loss
+  optimizer = meta.MetaOptimizer(**net_config)
+  meta_loss = optimizer.meta_loss(problem, 1, net_assignments=net_assignments)
+  _, update, reset, cost_op, _ = meta_loss
 
-    with ms.MonitoredSession() as sess:
-        # Prevent accidental changes to the graph.
-        tf.get_default_graph().finalize()
+  with ms.MonitoredSession() as sess:
+    # Prevent accidental changes to the graph.
+    tf.get_default_graph().finalize()
 
-        total_time = 0
-        total_cost = 0
-        for _ in xrange(FLAGS.num_epochs):
-            # Training.
-            time, cost = util.run_epoch(sess, cost_op, [update], reset,
-                                        num_unrolls)
-            total_time += time
-            total_cost += cost
+    total_time = 0
+    total_cost = 0
+    for _ in xrange(FLAGS.num_epochs):
+      # Training.
+      time, cost = util.run_epoch(sess, cost_op, [update], reset,
+                                  num_unrolls)
+      total_time += time
+      total_cost += cost
 
-        # Results.
-        util.print_stats("Epoch {}".format(FLAGS.num_epochs), total_cost,
-                         total_time, FLAGS.num_epochs)
+    # Results.
+    util.print_stats("Epoch {}".format(FLAGS.num_epochs), total_cost,
+                     total_time, FLAGS.num_epochs)
 
 
 if __name__ == "__main__":
-    tf.app.run()
+  tf.app.run()
