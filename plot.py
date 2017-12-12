@@ -38,7 +38,6 @@ def main():
   prob_num = len(problems_w)
   x = {}
   obj = {}
-
   for optimizer in optimizers:
     x[optimizer] = np.load(osp.join('./results', optimizer + '.npy'))
 
@@ -49,6 +48,8 @@ def main():
         map(lambda x: np.sum((problems_w[prob_idx].dot(x) - problems_b[prob_idx].squeeze()) ** 2),
             x[optimizer][prob_idx]))
       plt.plot(obj[optimizer], label=optimizer)
+      print('Plotting: problem {}, optimizer {}, loss {}, x {}'.format(prob_idx, optimizer, obj[optimizer][-1],
+                                                                       x[optimizer][prob_idx][-1]))
     plt.legend(loc='upper right')
     plt.xlabel('number of iterations')
     plt.ylabel('objective value')
