@@ -60,7 +60,7 @@ def main():
         # # plot level set and trajectory for SGD
         # W = 0.5 * np.eye(2)
         # Y = 0.5 * np.ones(2)
-    optimizer = 'Momentum'
+    optimizer = 'L2L'
     for prob_idx in range(prob_num):
         W = problems_w[prob_idx]
         Y = problems_b[prob_idx]
@@ -71,8 +71,12 @@ def main():
         miny = np.min(x[optimizer][prob_idx][:, 1])
         maxx = np.max(x[optimizer][prob_idx][:, 0])
         maxy = np.max(x[optimizer][prob_idx][:, 1])
-        x1 = np.arange(0.9 * min(minx, miny), 1.1 * max(maxx, maxy), delta)
-        x2 = np.arange(0.9 * min(minx, miny), 1.1 * max(maxx, maxy), delta)
+        min_plot = min(minx, miny)
+        max_plot = max(maxx, maxy)
+        t_min = min_plot - 0.3 * (max_plot - min_plot)
+        t_max = max_plot + 0.3 * (max_plot - min_plot)
+        x1 = np.arange(t_min, t_max, delta)
+        x2 = np.arange(t_min, t_max, delta)
         X1, X2 = np.meshgrid(x1, x2)
         F = A[0, 0] * X1 ** 2 + A[1, 1] * X2 ** 2 + (A[0, 1] + A[1, 0]) * X1 * X2 - b[0] * X1 - b[1] * X2 + LA.norm(
             Y) ** 2
@@ -80,7 +84,7 @@ def main():
         plt.contourf(X1, X2, F, 100, cmap='RdGy')
         plt.colorbar()
         plt.axes().set_aspect('equal')
-        plt.axis([0.9 * min(minx, miny), 1.1 * max(maxx, maxy), 0.9 *min(minx, miny), 1.1 * max(maxx, maxy)])
+        plt.axis([t_min, t_max, t_min, t_max])
 
         plt.scatter(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], s=30, edgecolors='g', facecolors='none',
                     marker='o')
