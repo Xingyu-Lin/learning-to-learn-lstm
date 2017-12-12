@@ -35,8 +35,8 @@ def run_epoch(sess, cost_op, x_op, ops, reset, num_unrolls):
     cost, x_value = sess.run([cost_op, x_op] + ops)[0:2]
     x_value_list.append(x_value)
   x_values = np.array(x_value_list)
+  # returns final cost after num_unrolls unrolls
   return timer() - start, cost, x_values
-
 
 #def run_epoch(sess, cost_op, ops, reset, num_unrolls):
 #  """Runs one optimization epoch."""
@@ -46,14 +46,14 @@ def run_epoch(sess, cost_op, x_op, ops, reset, num_unrolls):
 #    cost = sess.run([cost_op] + ops)[0]
 #  return timer() - start, cost
 
-
+# check x_value dimension.
 def run_epoch_test(sess, cost_op, x_op, ops, reset, num_unrolls):
   """Runs one optimization epoch."""
   start = timer()
   sess.run(reset)
   x_value_list = []
   for _ in xrange(num_unrolls):
-    cost, x_value, _ = sess.run([cost_op, x_op] + ops)
+    cost, x_value = sess.run([cost_op, x_op] + ops)[0:2]
     x_value_list.append(x_value)
   x_values = np.array(x_value_list)
   return timer() - start, cost, x_values
@@ -137,7 +137,7 @@ def get_config(problem_name, path=None, problem_path=None):
       problem = problems.quadratic(batch_size=1, num_dims=2)
     net_config = {"cw-wav": {
         "net": "CoordinateWiseWaveNet",
-        "net_options": {"num_layers": 6}, 
+        "net_options": {"num_layers": 8}, 
         "net_path": get_net_path("cw-wav", path)
     }}
     net_assignments = None

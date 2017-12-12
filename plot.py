@@ -37,7 +37,7 @@ def main():
     plt.figure(figsize=(10, 6))
     for optimizer in optimizers:
       obj[optimizer] = list(
-        map(lambda x: LA.norm(problems_w[prob_idx].dot(x) - problems_b[prob_idx]) ** 2, x[optimizer][prob_idx]))
+        map(lambda x: LA.norm(problems_w[prob_idx].dot(x) - np.transpose(problems_b[prob_idx])) ** 2, x[optimizer][prob_idx]))
       plt.plot(obj[optimizer], label=optimizer)
     plt.legend(loc='upper right')
     plt.xlabel('number of iterations')

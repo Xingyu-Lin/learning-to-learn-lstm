@@ -242,7 +242,6 @@ class MetaOptimizer(object):
           parameters to different optimizers (see net_assignments in the
           meta_loss method).
     """
-    # TODO: set up network config for wavenet
     self._nets = None
 
     if not kwargs:
@@ -327,6 +326,9 @@ class MetaOptimizer(object):
             name="input_queues", trainable=False))
 
     def update(net, fx, x, input_queues):
+      # input: net, fx, x, input_queues
+      # calculate gradient for fx/x, compute update step and updated input queue for one iteration. 
+
       """Parameter and WaveNet state update."""
       with tf.name_scope("gradients"):
         gradients = tf.gradients(fx, x)
@@ -345,6 +347,9 @@ class MetaOptimizer(object):
       return deltas, input_queues_next
 
     def time_step(t, fx_array, x, input_queues):
+      # compute fx according to x and write fx to fx_array
+      # compute delta and input_queue_next by calling update()
+      # compute x_next = x + delta, returned updated fx_array, x, and input_queue
       """While loop body."""
       x_next = list(x)
       input_queues_next = []
@@ -355,7 +360,7 @@ class MetaOptimizer(object):
 
       with tf.name_scope("dx"):
         for subset, key, s_i in zip(subsets, net_keys, input_queues):
-          # iterate through all trainiable optimizee variables
+          # iterate through all trainable optimizee variables
           x_i = [x[j] for j in subset]
           deltas, s_i_next = update(nets[key], fx, x_i, s_i)
 
@@ -385,6 +390,7 @@ class MetaOptimizer(object):
       fx_array = fx_array.write(len_unroll, fx_final)
 
     # sum of fx for len_unroll rollouts
+    # this is the objective for metalearner
     loss = tf.reduce_sum(fx_array.stack(), name="loss")
 
     # Reset the input_queue; should be called at the beginning of an epoch.

@@ -86,6 +86,7 @@ def main(_):
 
       # Logging.
       if (e + 1) % FLAGS.log_period == 0:
+        # the printed total_cost is averaged over log_period epochs
         util.print_stats("Epoch {}".format(e + 1), total_cost, total_time,
                          FLAGS.log_period)
         total_time = 0
@@ -101,6 +102,7 @@ def main(_):
           eval_time += time
           eval_cost += cost
 
+        # evaluation cost is the final cost averaged over evaluation_epochs epochs
         util.print_stats("EVALUATION", eval_cost, eval_time,
                          FLAGS.evaluation_epochs)
 
