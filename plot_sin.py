@@ -30,7 +30,7 @@ def f_quad(X1, X2, W, Y):
 
 
 def main():
-  optimizers = ['Adam', 'Momentum', 'SGD', 'NAG', 'RMSProp']
+  optimizers = ['L2L', 'Adam', 'Momentum', 'SGD', 'NAG', 'RMSProp']
 
   problem_path = './problems/sin.npy'
   problems = np.load(problem_path)
@@ -56,7 +56,7 @@ def main():
     plt.xlabel('number of iterations')
     plt.ylabel('objective value')
     ax = fig.add_subplot(1, 1, 1)
-    ax.set_yscale("log")
+    #ax.set_yscale("log")
     plt.savefig('./figs/loss_prob_{}.png'.format(prob_idx))
     # X = {}  # dictionary to store data
     # obj = {}  # dictionary to store obj value
@@ -93,7 +93,7 @@ def main():
       X1, X2 = np.meshgrid(x1, x2)
       Z = f_sin(X1, X2, a, b, c)
       ax = fig.add_subplot(2, (n + 1) / 2, i + 1)
-      cf = ax.contour(X1, X2, Z, 20)
+      cf = ax.contourf(X1, X2, Z, 10)
       fig.colorbar(cf, ax=ax)
       ax.set_aspect('equal')
       ax.axis([t_min, t_max, t_min, t_max])

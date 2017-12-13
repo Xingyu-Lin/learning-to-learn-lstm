@@ -116,7 +116,7 @@ def quadratic(batch_size=128, num_dims=10, stddev=0.01, dtype=tf.float32, proble
 
 def prob_sin(batch_size=128, num_dims=2, stddev=0.01, dtype=tf.float32, problem_param=None):
   # def quadratic(batch_size=1, num_dims=10, stddev=0.01, dtype=tf.float32):
-  """f(x) = np.sin(x + b) ** 5 + a * np.cos(b + y * x) * np.cos(c * x)"""
+  """f(x, y) = np.sin(x + b) ** 5 + a * np.cos(b + y * x) * np.cos(c * x)"""
 
   def build():
     """Builds loss graph."""
@@ -130,10 +130,9 @@ def prob_sin(batch_size=128, num_dims=2, stddev=0.01, dtype=tf.float32, problem_
 
     x = tf.get_variable(
       "x",
-      #shape=[batch_size, num_dims],
+      # shape=[batch_size, num_dims],
       dtype=dtype,
       initializer=tf.constant(np.ones(shape=(batch_size, 2), dtype=np.float32) * 0.1))
-
     # Non-trainable variables.
     if problem_param is None:
       a = tf.get_variable("a",
@@ -155,20 +154,22 @@ def prob_sin(batch_size=128, num_dims=2, stddev=0.01, dtype=tf.float32, problem_
       a = tf.get_variable("a",
                           shape=[batch_size, 1],
                           dtype=dtype,
-                          initializer=tf.constant_initializer(problem_param[0]),
+                          initializer=tf.constant_initializer(problem_param[:, 0]),
                           trainable=False)
       b = tf.get_variable("b",
                           shape=[batch_size, 1],
                           dtype=dtype,
-                          initializer=tf.constant_initializer(problem_param[1]),
+                          initializer=tf.constant_initializer(problem_param[:, 1]),
                           trainable=False)
       c = tf.get_variable("c",
                           shape=[batch_size, 1],
                           dtype=dtype,
-                          initializer=tf.constant_initializer(problem_param[2]),
+                          initializer=tf.constant_initializer(problem_param[:, 2]),
                           trainable=False)
 
-    f_sin = tf.squeeze(tf.pow(tf.sin(x[:, 0] + b), 5) + a * tf.cos(b + x[:, 1] * x[:, 0]) * tf.cos(c * x[:, 0]))
+    tx = tf.slice(x, [0, 0], [-1, 1])
+    ty = tf.slice(x, [0, 1], [-1, 1])
+    f_sin = tf.squeeze(tf.pow(tf.sin(tx + b), 5) + a * tf.cos(b + ty * tx) * tf.cos(c * tx))
     return tf.reduce_mean(f_sin)
 
   return build
