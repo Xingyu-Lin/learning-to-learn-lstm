@@ -15,6 +15,11 @@ import matplotlib.cm as cm
 import matplotlib.mlab as mlab
 import matplotlib
 
+
+def f_sin(x, y, a, b, c):
+  return np.sin(x + b) ** 5 + a * np.cos(b + y * x) * np.cos(c * x)
+
+
 def f_quad(X1, X2, W, Y):
   assert (Y.shape == (2,))
   Z = np.ndarray(shape=X1.shape, dtype=X1.dtype)
@@ -25,28 +30,28 @@ def f_quad(X1, X2, W, Y):
 
 
 def main():
-  optimizers = ['L2L', 'Adam', 'Momentum', 'SGD', 'NAG', 'RMSProp']
+  optimizers = ['Adam', 'Momentum', 'SGD', 'NAG', 'RMSProp']
 
-  problem_path = './problems/quadratic.npz'
-  npzfile = np.load(problem_path)
-  problems_w, problems_b = npzfile['arr_0'], npzfile['arr_1']
-  prob_num = len(problems_w)
+  problem_path = './problems/sin.npy'
+  problems = np.load(problem_path)
+  print(problems)
+
+  prob_num = len(problems)
   x = {}
   obj = {}
 
   for optimizer in optimizers:
     x[optimizer] = np.load(osp.join('./results', optimizer + '.npy'))
 
-  print('problem_w', problems_w)
-  print('problem_b', problems_b)
   for prob_idx in range(prob_num):
     fig = plt.figure(figsize=(10, 6))
+    a, b, c = problems[prob_idx]
     for optimizer in optimizers:
       obj[optimizer] = list(
-        map(lambda x: np.sum((problems_w[prob_idx].dot(x) - problems_b[prob_idx].squeeze()) ** 2),
-            x[optimizer][prob_idx]))
+        map(lambda x: f_sin(x[0], x[1], a, b, c), x[optimizer][prob_idx]))
       plt.plot(obj[optimizer], label=optimizer)
-      print('Plotting: problem {}, optimizer {}, loss {}, x {}'.format(prob_idx, optimizer, obj[optimizer][-1], x[optimizer][prob_idx][-1]))
+      print('Plotting: problem {}, optimizer {}, loss {}, x {}'.format(prob_idx, optimizer, obj[optimizer][-1],
+                                                                       x[optimizer][prob_idx][-1]))
     plt.legend(loc='upper right')
     plt.xlabel('number of iterations')
     plt.ylabel('objective value')
@@ -70,15 +75,11 @@ def main():
     # W = 0.5 * np.eye(2)
     # Y = 0.5 * np.ones(2)
 
-
-
-
   n = len(optimizers)
   for prob_idx in range(prob_num):
     fig = plt.figure(figsize=(12, 8))
     for i, optimizer in enumerate(optimizers):
-      W = problems_w[prob_idx]
-      Y = problems_b[prob_idx]
+      a, b, c = problems[prob_idx]
       minx = np.min(x[optimizer][prob_idx][:, 0])
       miny = np.min(x[optimizer][prob_idx][:, 1])
       maxx = np.max(x[optimizer][prob_idx][:, 0])
@@ -90,16 +91,17 @@ def main():
       x1 = np.linspace(t_min, t_max, num=50)
       x2 = np.linspace(t_min, t_max, num=50)
       X1, X2 = np.meshgrid(x1, x2)
-      Z = f_quad(X1, X2, W, Y.squeeze())
-      ax = fig.add_subplot(2, (n+1)/2, i+1)
-      ax.contour(X1, X2, Z, 20)
+      Z = f_sin(X1, X2, a, b, c)
+      ax = fig.add_subplot(2, (n + 1) / 2, i + 1)
+      cf = ax.contour(X1, X2, Z, 20)
+      fig.colorbar(cf, ax=ax)
       ax.set_aspect('equal')
       ax.axis([t_min, t_max, t_min, t_max])
       ax.set_title(optimizer)
       ax.scatter(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], s=5, edgecolors='r', facecolors='none',
-                  marker='o')
+                 marker='o')
       ax.plot(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], color='r')
-  #plt.colorbar()
+      # plt.colorbar()
       plt.savefig('./figs/contour_{}.png'.format(prob_idx))
 
 
