@@ -1,0 +1,24 @@
+Optimizee variables
+[u'x:0']
+Problem variables
+[u'w:0', u'y:0']
+Optimizer 'cw-wav' variables
+[u'vars_optimizer/cw_wavenet/Conv/weights:0', u'vars_optimizer/cw_wavenet/Conv/biases:0', u'vars_optimizer/cw_wavenet/Conv_1/weights:0', u'vars_optimizer/cw_wavenet/Conv_1/biases:0', u'vars_optimizer/cw_wavenet/Conv_2/weights:0', u'vars_optimizer/cw_wavenet/Conv_2/biases:0', u'vars_optimizer/cw_wavenet/Conv_3/weights:0', u'vars_optimizer/cw_wavenet/Conv_3/biases:0', u'vars_optimizer/cw_wavenet/Conv_4/weights:0', u'vars_optimizer/cw_wavenet/Conv_4/biases:0', u'vars_optimizer/cw_wavenet/Conv_5/weights:0', u'vars_optimizer/cw_wavenet/Conv_5/biases:0', u'vars_optimizer/cw_wavenet/Conv_6/weights:0', u'vars_optimizer/cw_wavenet/Conv_6/biases:0', u'vars_optimizer/cw_wavenet/Conv_7/weights:0', u'vars_optimizer/cw_wavenet/Conv_7/biases:0', u'vars_optimizer/cw_wavenet/fully_connected/weights:0', u'vars_optimizer/cw_wavenet/fully_connected/biases:0']
+Epoch 1
+Mean Final Error: 0.27
+Mean epoch time: 0.49 s
+Epoch 1
+Mean Final Error: 0.01
+Mean epoch time: 0.15 s
+Epoch 1
+Mean Final Error: 0.05
+Mean epoch time: 0.14 s
+Epoch 1
+Mean Final Error: 0.06
+Mean epoch time: 0.14 s
+Epoch 1
+Mean Final Error: 0.04
+Mean epoch time: 0.14 s
+Epoch 1
+Mean Final Error: 0.06
+Mean epoch time: 0.13 s
