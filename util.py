@@ -26,34 +26,23 @@ from six.moves import xrange
 
 import problems
 
-def run_epoch(sess, cost_op, x_op, ops, reset, num_unrolls):
+
+def run_epoch(sess, cost_op, ops, reset, num_unrolls):
   """Runs one optimization epoch."""
   start = timer()
   sess.run(reset)
-  x_value_list = []
   for _ in xrange(num_unrolls):
-    cost, x_value = sess.run([cost_op, x_op] + ops)[0:2]
-    x_value_list.append(x_value)
-  x_values = np.array(x_value_list)
-  # returns final cost after num_unrolls unrolls
-  return timer() - start, cost, x_values
+    cost = sess.run([cost_op] + ops)[0]
+  return timer() - start, cost
 
-#def run_epoch(sess, cost_op, ops, reset, num_unrolls):
-#  """Runs one optimization epoch."""
-#  start = timer()
-#  sess.run(reset)
-#  for _ in xrange(num_unrolls):
-#    cost = sess.run([cost_op] + ops)[0]
-#  return timer() - start, cost
 
-# check x_value dimension.
 def run_epoch_test(sess, cost_op, x_op, ops, reset, num_unrolls):
   """Runs one optimization epoch."""
   start = timer()
   sess.run(reset)
   x_value_list = []
   for _ in xrange(num_unrolls):
-    cost, x_value = sess.run([cost_op, x_op] + ops)[0:2]
+    cost, x_value, _ = sess.run([cost_op, x_op] + ops)
     x_value_list.append(x_value)
   x_values = np.array(x_value_list)
   return timer() - start, cost, x_values
@@ -67,7 +56,6 @@ def print_stats(header, total_error, total_time, n):
   print("Mean epoch time: {:.2f} s".format(total_time / n))
 
 
-# name: 'cw'
 def get_net_path(name, path):
   return None if path is None else os.path.join(path, name + ".l2l")
 
@@ -125,20 +113,18 @@ def get_config(problem_name, path=None, problem_path=None):
       "net_path": get_net_path("cw", path)
     }}
     net_assignments = None
-  elif problem_name == "quadratic-wav":
+  elif problem_name == "sin":
     if problem_path is not None:
-      npzfile = np.load(problem_path)
-      problems_w, problems_b = npzfile['arr_0'], npzfile['arr_1']
-      assert len(problems_w) == len(problems_b)
-      batch_size = len(problems_w)
-      problem = problems.quadratic(batch_size=batch_size, num_dims=2, problems_w=problems_w,
-                                   problems_b=problems_b)
+      problems_sin = np.load(problem_path)  # TODO
+
+      batch_size = len(problems_sin)
+      problem = problems.prob_sin(batch_size=batch_size, problem_param=problems_sin)
     else:
-      problem = problems.quadratic(batch_size=1, num_dims=2)
-    net_config = {"cw-wav": {
-        "net": "CoordinateWiseWaveNet",
-        "net_options": {"num_layers": 8}, 
-        "net_path": get_net_path("cw-wav", path)
+      problem = problems.prob_sin(batch_size=128)
+    net_config = {"cw": {
+      "net": "CoordinateWiseDeepLSTM",
+      "net_options": {"layers": (20, 20)},
+      "net_path": get_net_path("cw", path)
     }}
     net_assignments = None
   elif problem_name == "mnist":
