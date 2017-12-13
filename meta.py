@@ -314,24 +314,37 @@ class MetaOptimizer(object):
 
     # Create input queues for each subset of variables.
     # One element in input_queues essentially
-    input_queues = []
+
+    if 'wav' in net_keys[0]:
+      using_wavenet = True
+    else:
+      using_wavenet = False
+    # state stands for hidden states in LSTM,
+    # state stands for input_queues in wavenet
+    state = []
     # input_queues[0]: a list of length batch_size, each element is an initialized input_queue.
-    with tf.name_scope("input_queues"):
+    with tf.name_scope("state"):
       for i, (subset, key) in enumerate(zip(subsets, net_keys)):
         net = nets[key]
-        with tf.name_scope("input_queues_{}".format(i)):
-          input_queues.append(_nested_variable(
-            [net.initial_input_queues(x[j])
+        with tf.name_scope("state_{}".format(i)):
+          if using_wavenet:
+            state.append(_nested_variable(
+            [net.initial_state_for_inputs(x[j])
              for j in subset],
-            name="input_queues", trainable=False))
+            name="state", trainable=False))
+          else:
+            state.append(_nested_variable(
+              [net.initial_state_for_inputs(x[j], dtype=tf.float32)
+               for j in subset],
+              name="state", trainable=False))
 
-    def update(net, fx, x, input_queues):
-      # input: net, fx, x, input_queues
-      # calculate gradient for fx/x, compute update step and updated input queue for one iteration. 
-
-      """Parameter and WaveNet state update."""
+    def update(net, fx, x, state):
+      """
+        Parameter and RNN state/WaveNet input_queue update.
+      """
       with tf.name_scope("gradients"):
         gradients = tf.gradients(fx, x)
+
         # Stopping the gradient here corresponds to what was done in the
         # original L2L NIPS submission. However it looks like things like
         # BatchNorm, etc. don't support second-derivatives so we still need
@@ -341,49 +354,47 @@ class MetaOptimizer(object):
           # gradients[0].get_shape() == x.get_shape() == batch_size x num_dims
 
       with tf.name_scope("deltas"):
-        deltas, input_queues_next = zip(*[net(g, s) for g, s in zip(gradients, input_queues)])
-        input_queues_next = list(input_queues_next)
+        deltas, state_next = zip(*[net(g, s) for g, s in zip(gradients, state)])
+        state_next = list(state_next)
 
-      return deltas, input_queues_next
+      return deltas, state_next
 
-    def time_step(t, fx_array, x, input_queues):
+    def time_step(t, fx_array, x, state):
       # compute fx according to x and write fx to fx_array
       # compute delta and input_queue_next by calling update()
       # compute x_next = x + delta, returned updated fx_array, x, and input_queue
       """While loop body."""
       x_next = list(x)
-      input_queues_next = []
+      state_next = []
 
       with tf.name_scope("fx"):
         fx = _make_with_custom_variables(make_loss, x)
         fx_array = fx_array.write(t, fx)
 
       with tf.name_scope("dx"):
-        for subset, key, s_i in zip(subsets, net_keys, input_queues):
-          # iterate through all trainable optimizee variables
+        for subset, key, s_i in zip(subsets, net_keys, state):
           x_i = [x[j] for j in subset]
           deltas, s_i_next = update(nets[key], fx, x_i, s_i)
 
           for idx, j in enumerate(subset):
             x_next[j] += deltas[idx]
-          input_queues_next.append(s_i_next)
+          state_next.append(s_i_next)
 
       with tf.name_scope("t_next"):
         t_next = t + 1
 
-      return t_next, fx_array, x_next, input_queues_next
+      return t_next, fx_array, x_next, state_next
 
-      # Define the while loop.
-
+    # Define the while loop.
     fx_array = tf.TensorArray(tf.float32, size=len_unroll + 1,
                               clear_after_read=False)
     _, fx_array, x_final, s_final = tf.while_loop(
-      cond=lambda t, *_: t < len_unroll,
-      body=time_step,
-      loop_vars=(0, fx_array, x, input_queues),
-      parallel_iterations=1,
-      swap_memory=True,
-      name="unroll")
+        cond=lambda t, *_: t < len_unroll,
+        body=time_step,
+        loop_vars=(0, fx_array, x, state),
+        parallel_iterations=1,
+        swap_memory=True,
+        name="unroll")
 
     with tf.name_scope("fx"):
       fx_final = _make_with_custom_variables(make_loss, x_final)
@@ -395,16 +406,16 @@ class MetaOptimizer(object):
 
     # Reset the input_queue; should be called at the beginning of an epoch.
     with tf.name_scope("reset"):
-      variables = (nest.flatten(input_queues) +
+      variables = (nest.flatten(state) +
                    x + constants)
       # Empty array as part of the reset process.
       reset = [tf.variables_initializer(variables), fx_array.close()]
 
-    # Operator to update the parameters and the input_queues after our loop, but
+    # Operator to update the parameters and the RNN state/WaveNet input_queues after our loop, but
     # during an epoch.
     with tf.name_scope("update"):
       update = (nest.flatten(_nested_assign(x, x_final)) +
-                nest.flatten(_nested_assign(input_queues, s_final)))
+                nest.flatten(_nested_assign(state, s_final)))
 
     # Log internal variables.
     for k, net in nets.items():

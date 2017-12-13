@@ -150,7 +150,6 @@ def _get_layer_initializers(initializers, layer_name, fields):
 
   return _get_initializers(initializers, fields)
 
-# TODO: construct wavenet according to this
 # WaveNet does not inherit from the RNN Network metaclass.
 # Needs to implement all necessary functions
 # Inherits the sonnet.AbstractModule to use its functionality
@@ -217,7 +216,7 @@ class WaveNet(snt.AbstractModule):
     # output final size: batch_size x 1 x 1
     return output * self._scale, new_input_queue
 
-  def initial_input_queue(self, inputs):
+  def initial_state_for_inputs(self, inputs):
     batch_size = inputs.get_shape().as_list()[0]
     inputs = self._preprocess(inputs)
     # inputs: batch_size x input_size
@@ -258,15 +257,14 @@ class CoordinateWiseWaveNet(WaveNet):
     # reshaped_inputs.get_shape = batch_size * num_coords x 1
 
     build_fn = super(CoordinateWiseWaveNet, self)._build
-    # TODO: build_fn is where forward graph takes place
     output, new_input_queues = build_fn(reshaped_inputs, input_queues)
 
     # Recover original shape.
     return tf.reshape(output, input_shape), new_input_queues
 
-  def initial_input_queues(self, inputs):
+  def initial_state_for_inputs(self, inputs):
     reshaped_inputs = self._reshape_inputs(inputs)
-    return super(CoordinateWiseWaveNet, self).initial_input_queue(
+    return super(CoordinateWiseWaveNet, self).initial_state_for_inputs(
         reshaped_inputs)
 
 

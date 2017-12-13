@@ -27,14 +27,16 @@ from six.moves import xrange
 import problems
 
 
-def run_epoch(sess, cost_op, ops, reset, num_unrolls):
+def run_epoch(sess, cost_op, x_op, ops, reset, num_unrolls):
   """Runs one optimization epoch."""
   start = timer()
   sess.run(reset)
+  x_value_list = []
   for _ in xrange(num_unrolls):
-    cost = sess.run([cost_op] + ops)[0]
-  return timer() - start, cost
-
+    cost, x_value = sess.run([cost_op, x_op] + ops)[0:2]
+    x_value_list.append(x_value)
+  x_values = np.array(x_value_list)
+  return timer() - start, cost, x_values
 
 def run_epoch_test(sess, cost_op, x_op, ops, reset, num_unrolls):
   """Runs one optimization epoch."""
@@ -42,7 +44,7 @@ def run_epoch_test(sess, cost_op, x_op, ops, reset, num_unrolls):
   sess.run(reset)
   x_value_list = []
   for _ in xrange(num_unrolls):
-    cost, x_value, _ = sess.run([cost_op, x_op] + ops)
+    cost, x_value = sess.run([cost_op, x_op] + ops)[0:2]
     x_value_list.append(x_value)
   x_values = np.array(x_value_list)
   return timer() - start, cost, x_values
@@ -111,6 +113,22 @@ def get_config(problem_name, path=None, problem_path=None):
       "net": "CoordinateWiseDeepLSTM",
       "net_options": {"layers": (20, 20)},
       "net_path": get_net_path("cw", path)
+    }}
+    net_assignments = None
+  elif problem_name == "quadratic-wav":
+    if problem_path is not None:
+      npzfile = np.load(problem_path)
+      problems_w, problems_b = npzfile['arr_0'], npzfile['arr_1']
+      assert len(problems_w) == len(problems_b)
+      batch_size = len(problems_w)
+      problem = problems.quadratic(batch_size=batch_size, num_dims=2, problems_w=problems_w,
+                                   problems_b=problems_b)
+    else:
+      problem = problems.quadratic(batch_size=1, num_dims=2)
+    net_config = {"cw-wav": {
+        "net": "CoordinateWiseWaveNet",
+        "net_options": {"num_layers": 4}, 
+        "net_path": get_net_path("cw-wav", path)
     }}
     net_assignments = None
   elif problem_name == "sin":
