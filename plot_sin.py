@@ -17,7 +17,7 @@ import matplotlib
 
 
 def f_sin(x, y, a, b, c):
-  return np.sin(x + b) ** 5 + a * np.cos(b + y * x) * np.cos(c * x)
+  return np.sin(a * x + b) ** 7 + a * np.cos(b + y * x) * np.cos(c * x)
 
 
 def f_quad(X1, X2, W, Y):
@@ -34,7 +34,6 @@ def main():
 
   problem_path = './problems/sin.npy'
   problems = np.load(problem_path)
-  print(problems)
 
   prob_num = len(problems)
   x = {}

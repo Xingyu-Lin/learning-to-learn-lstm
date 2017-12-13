@@ -135,8 +135,6 @@ def main(_):
       total_cost += cost
 
     x_values = np.swapaxes(np.squeeze(x_values), 0, 1)
-    print(x_values.shape)
-    print(x_values)
     np.save(os.path.join('results', '{}'.format(FLAGS.optimizer)), x_values)
 
     # print("x_values shape: {}".format(x_values.shape))

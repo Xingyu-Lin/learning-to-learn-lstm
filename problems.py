@@ -170,7 +170,7 @@ def prob_sin(batch_size=128, num_dims=2, stddev=0.01, dtype=tf.float32, problem_
 
     tx = tf.slice(x, [0, 0], [-1, 1])
     ty = tf.slice(x, [0, 1], [-1, 1])
-    f_sin = tf.squeeze(tf.pow(tf.sin(tx + b), 5) + a * tf.cos(b + ty * tx) * tf.cos(c * tx))
+    f_sin = tf.squeeze(tf.pow(tf.sin(a * tx + b), 7) + a * tf.cos(b + ty * tx) * tf.cos(c * tx))
     return tf.reduce_mean(f_sin)
 
   return build
