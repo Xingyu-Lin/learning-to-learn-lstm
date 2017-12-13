@@ -30,7 +30,7 @@ def f_quad(X1, X2, W, Y):
 
 
 def main():
-  optimizers = ['Adam', 'Momentum', 'SGD', 'NAG', 'RMSProp']
+  optimizers = ['L2L', 'Adam', 'Momentum', 'SGD', 'NAG', 'RMSProp']
 
   problem_path = './problems/quadratic.npz'
   npzfile = np.load(problem_path)
