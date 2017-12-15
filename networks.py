@@ -198,12 +198,13 @@ class WaveNet(snt.AbstractModule):
     # Adds preprocessing dimension and preprocess.
     batch_size = inputs.get_shape().as_list()[0]
     inputs = self._preprocess(inputs)
+    print("inputs shape: {}".format(inputs.get_shape()))
     # inputs.get_shape = batch_size x input_size
-    # input_size depends on preprocessing
+    # input_size depends on preprocessing. Identity preprocessing -> no change
     # Incorporates preprocessing into data dimension.
     inputs = tf.reshape(inputs, [batch_size, 1, -1])
     # update input queue with new input
-    new_input_queue = tf.slice(input_queue, [0, 0, 0], [-1, self._input_length-1, -1])
+    new_input_queue = tf.slice(input_queue, [0, 1, 0], [-1, self._input_length-1, -1])
     new_input_queue = tf.concat([new_input_queue, inputs], axis=1)
     output = tf.identity(new_input_queue)
     output = tf.reshape(output, [batch_size, self._input_length, -1])
@@ -214,6 +215,7 @@ class WaveNet(snt.AbstractModule):
       output = slim.conv2d(output, num_outputs=16*(i+1) ,kernel_size=[2], stride=2, padding='VALID')
     output = slim.fully_connected(output, 1, activation_fn=None)
     # output final size: batch_size x 1 x 1
+    # new_input_queue = tf.Print(new_input_queue, [new_input_queue], message='new input queue:', summarize=100)
     return output * self._scale, new_input_queue
 
   def initial_state_for_inputs(self, inputs):

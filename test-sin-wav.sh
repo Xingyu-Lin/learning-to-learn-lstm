@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Generate problems
+python generate_problems_sin.py
+
+# Optimize
+optimizers=("L2L" "Adam" "Momentum" "NAG" "RMSProp" "SGD")
+tLen=${#optimizers[@]}
+
+python evaluate.py --optimizer=${optimizers[0]} --problem=sin-wav --path=./sin-wav-200 --problem_path=./problems/sin.npy --learning_rate=0.001 --num_steps=200
+
+for (( i=1; i<${tLen}; i++ ));
+do
+    python evaluate.py --optimizer=${optimizers[$i]} --problem=sin-wav --path=./sin-wav-200 --problem_path=./problems/sin.npy --learning_rate=0.1 --num_steps=200
+done
+
+# Plot
+python plot_sin.py

@@ -38,6 +38,7 @@ def run_epoch(sess, cost_op, x_op, ops, reset, num_unrolls):
   x_values = np.array(x_value_list)
   return timer() - start, cost, x_values
 
+<<<<<<< HEAD
 def run_epoch_test(sess, cost_op, x_op, ops, reset, num_unrolls):
   """Runs one optimization epoch."""
   start = timer()
@@ -50,6 +51,8 @@ def run_epoch_test(sess, cost_op, x_op, ops, reset, num_unrolls):
   return timer() - start, cost, x_values
 
 
+=======
+>>>>>>> 8bf6b7f8a8262628a39d776a6c3cacbb1673ddb5
 def print_stats(header, total_error, total_time, n):
   """Prints experiment statistics."""
   print(header)
@@ -145,6 +148,21 @@ def get_config(problem_name, path=None, problem_path=None):
       "net_path": get_net_path("cw", path)
     }}
     net_assignments = None
+  elif problem_name == "sin-wav":
+    if problem_path is not None:
+      problems_sin = np.load(problem_path)  # TODO
+
+      batch_size = len(problems_sin)
+      problem = problems.prob_sin(batch_size=batch_size, problem_param=problems_sin)
+    else:
+      problem = problems.prob_sin(batch_size=128)
+    net_config = {"cw-wav": {
+        "net": "CoordinateWiseWaveNet",
+        "net_options": {"num_layers": 4}, 
+        "net_path": get_net_path("cw-wav", path)
+    }}
+    net_assignments = None
+ 
   elif problem_name == "mnist":
     mode = "train" if path is None else "test"
     problem = problems.mnist(layers=(20,), mode=mode)

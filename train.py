@@ -39,7 +39,7 @@ flags.DEFINE_integer("evaluation_period", 1000, "Evaluation period.")
 flags.DEFINE_integer("evaluation_epochs", 20, "Number of evaluation epochs.")
 
 flags.DEFINE_string("problem", "simple", "Type of problem.")
-flags.DEFINE_integer("num_steps", 100,
+flags.DEFINE_integer("num_steps", 1000,
                      "Number of optimization steps per epoch.")
 flags.DEFINE_integer("unroll_length", 20, "Meta-optimizer unroll length.")
 flags.DEFINE_float("learning_rate", 0.001, "Learning rate.")

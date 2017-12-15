@@ -83,7 +83,7 @@ def quadratic(batch_size=128, num_dims=10, stddev=0.01, dtype=tf.float32, proble
         "x",
         shape=[batch_size, num_dims],
         dtype=dtype,
-        #initializer=tf.constant_initializer(np.zeros([batch_size, num_dims])))
+        # initializer=tf.constant_initializer(np.zeros([batch_size, num_dims])))
         initializer=tf.random_normal_initializer(stddev=stddev))
     else:
       x = tf.get_variable(
