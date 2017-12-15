@@ -38,18 +38,6 @@ def run_epoch(sess, cost_op, x_op, ops, reset, num_unrolls):
   x_values = np.array(x_value_list)
   return timer() - start, cost, x_values
 
-def run_epoch_test(sess, cost_op, x_op, ops, reset, num_unrolls):
-  """Runs one optimization epoch."""
-  start = timer()
-  sess.run(reset)
-  x_value_list = []
-  for _ in xrange(num_unrolls):
-    cost, x_value = sess.run([cost_op, x_op] + ops)[0:2]
-    x_value_list.append(x_value)
-  x_values = np.array(x_value_list)
-  return timer() - start, cost, x_values
-
-
 def print_stats(header, total_error, total_time, n):
   """Prints experiment statistics."""
   print(header)

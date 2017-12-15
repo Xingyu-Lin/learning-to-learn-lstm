@@ -129,7 +129,7 @@ def main(_):
     total_cost = 0
     for _ in xrange(FLAGS.num_epochs):
       # Training.
-      time, cost, x_values = util.run_epoch_test(sess, cost_op, x_op, [update], reset,
+      time, cost, x_values = util.run_epoch(sess, cost_op, x_op, [update], reset,
                                                  num_unrolls)
       total_time += time
       total_cost += cost
