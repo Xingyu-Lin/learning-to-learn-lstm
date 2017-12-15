@@ -14,4 +14,4 @@ python evaluate.py --optimizer=${optimizers[0]} --problem=quadratic-wav --path=.
 #done
 #
 ## Plot
-#python plot.py
+python plot.py

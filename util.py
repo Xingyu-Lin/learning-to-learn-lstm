@@ -124,7 +124,7 @@ def get_config(problem_name, path=None, problem_path=None):
       problem = problems.quadratic(batch_size=batch_size, num_dims=2, problems_w=problems_w,
                                    problems_b=problems_b)
     else:
-      problem = problems.quadratic(batch_size=1, num_dims=2)
+      problem = problems.quadratic(batch_size=128, num_dims=2)
     net_config = {"cw-wav": {
         "net": "CoordinateWiseWaveNet",
         "net_options": {"num_layers": 4}, 
