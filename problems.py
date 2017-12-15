@@ -78,13 +78,19 @@ def quadratic(batch_size=128, num_dims=10, stddev=0.01, dtype=tf.float32, proble
     """Builds loss graph."""
 
     # Trainable variable.
-    x = tf.get_variable(
-      "x",
-      shape=[batch_size, num_dims],
-      dtype=dtype,
-      initializer=tf.constant_initializer(np.zeros([batch_size, num_dims])))
-     #initializer=tf.random_normal_initializer(stddev=stddev))
-
+    if problems_w is None:
+      x = tf.get_variable(
+        "x",
+        shape=[batch_size, num_dims],
+        dtype=dtype,
+        #initializer=tf.constant_initializer(np.zeros([batch_size, num_dims])))
+        initializer=tf.random_normal_initializer(stddev=stddev))
+    else:
+      x = tf.get_variable(
+        "x",
+        shape=[batch_size, num_dims],
+        dtype=dtype,
+        initializer=tf.constant_initializer(np.zeros([batch_size, num_dims]), dtype=np.float32))
     # Non-trainable variables.
     if problems_w is None:
       w = tf.get_variable("w",
@@ -128,12 +134,18 @@ def prob_sin(batch_size=128, num_dims=2, stddev=0.01, dtype=tf.float32, problem_
     #   shape=[batch_size, num_dims],
     #   dtype=dtype,
     #   initializer=tf.random_normal_initializer(stddev=stddev))
-
-    x = tf.get_variable(
-      "x",
-      # shape=[batch_size, num_dims],
-      dtype=dtype,
-      initializer=tf.constant(np.ones(shape=(batch_size, 2), dtype=np.float32) * 0.1))
+    if problem_param is None:
+      x = tf.get_variable(
+        "x",
+        shape=[batch_size, 2],
+        dtype=dtype,
+        initializer=tf.random_normal_initializer(stddev=stddev))
+    else:
+      x = tf.get_variable(
+        "x",
+        shape=[batch_size, 2],
+        dtype=dtype,
+        initializer=tf.constant_initializer(np.zeros(shape=(batch_size, 2), dtype=np.float32) * 0.1))
     # Non-trainable variables.
     if problem_param is None:
       a = tf.get_variable("a",

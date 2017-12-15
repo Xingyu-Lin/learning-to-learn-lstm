@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Generate problems
-# python generate_problems_sin.py
+python generate_problems_sin.py
 
 # Optimize
 optimizers=("L2L" "Adam" "Momentum" "NAG" "RMSProp" "SGD")

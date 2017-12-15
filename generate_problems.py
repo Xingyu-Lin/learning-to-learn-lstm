@@ -2,7 +2,7 @@ import numpy as np
 
 problems_w = []
 problems_b = []
-for i in range(1):
+for i in range(5):
   w = np.random.random((2, 2))
   b = np.random.random((2, 1))
   # w = 0.5 * np.eye(2)

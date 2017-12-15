@@ -42,7 +42,7 @@ def run_epoch_test(sess, cost_op, x_op, ops, reset, num_unrolls):
   """Runs one optimization epoch."""
   start = timer()
   sess.run(reset)
-  x_value_list = []
+  x_value_list = [sess.run(x_op)]
   for _ in xrange(num_unrolls):
     cost, x_value = sess.run([cost_op, x_op] + ops)[0:2]
     x_value_list.append(x_value)
@@ -108,7 +108,7 @@ def get_config(problem_name, path=None, problem_path=None):
       problem = problems.quadratic(batch_size=batch_size, num_dims=2, problems_w=problems_w,
                                    problems_b=problems_b)
     else:
-      problem = problems.quadratic(batch_size=1, num_dims=2)
+      problem = problems.quadratic(batch_size=128, num_dims=2)
     net_config = {"cw": {
       "net": "CoordinateWiseDeepLSTM",
       "net_options": {"layers": (20, 20)},
@@ -124,7 +124,7 @@ def get_config(problem_name, path=None, problem_path=None):
       problem = problems.quadratic(batch_size=batch_size, num_dims=2, problems_w=problems_w,
                                    problems_b=problems_b)
     else:
-      problem = problems.quadratic(batch_size=1, num_dims=2)
+      problem = problems.quadratic(batch_size=128, num_dims=2)
     net_config = {"cw-wav": {
         "net": "CoordinateWiseWaveNet",
         "net_options": {"num_layers": 4}, 

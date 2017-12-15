@@ -41,7 +41,6 @@ def main():
 
   for optimizer in optimizers:
     x[optimizer] = np.load(osp.join('./results', optimizer + '.npy'))
-
   for prob_idx in range(prob_num):
     fig = plt.figure(figsize=(10, 6))
     a, b, c = problems[prob_idx]
@@ -55,7 +54,7 @@ def main():
     plt.xlabel('number of iterations')
     plt.ylabel('objective value')
     ax = fig.add_subplot(1, 1, 1)
-    #ax.set_yscale("log")
+    # ax.set_yscale("log")
     plt.savefig('./figs/loss_prob_{}.png'.format(prob_idx))
     # X = {}  # dictionary to store data
     # obj = {}  # dictionary to store obj value
