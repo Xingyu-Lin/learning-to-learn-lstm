@@ -100,7 +100,12 @@ def main():
                  marker='o')
       ax.plot(x[optimizer][prob_idx][:, 0], x[optimizer][prob_idx][:, 1], color='r')
       # plt.colorbar()
-      plt.savefig('./figs/contour_{}.png'.format(prob_idx))
+
+      if (prob_idx ==1 or prob_idx ==3) and i==0:
+        extent = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+        fig.savefig('./figs/fail_sin_{}.png'.format(prob_idx), bbox_inches=extent)
+    plt.savefig('./figs/contour_{}.png'.format(prob_idx))
+
 
 
 if __name__ == "__main__":
