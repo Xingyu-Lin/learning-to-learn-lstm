@@ -129,13 +129,16 @@ def main(_):
     total_cost = 0
     for _ in xrange(FLAGS.num_epochs):
       # Training.
-      time, cost, x_values = util.run_epoch_test(sess, cost_op, x_op, [update], reset,
+      time, cost, x_values = util.run_epoch(sess, cost_op, x_op, [update], reset,
                                                  num_unrolls)
       total_time += time
       total_cost += cost
 
     x_values = np.swapaxes(np.squeeze(x_values), 0, 1)
-    np.save(os.path.join('results', '{}'.format(FLAGS.optimizer)), x_values)
+    if FLAGS.problem.find('wav') != -1:
+      np.save(os.path.join('results', '{}_wav'.format(FLAGS.optimizer)), x_values)
+    else:
+      np.save(os.path.join('results', '{}'.format(FLAGS.optimizer)), x_values)
 
     # print("x_values shape: {}".format(x_values.shape))
     # print("x_values: {}".format(x_values))

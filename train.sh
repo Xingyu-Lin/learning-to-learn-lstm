@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-problems=(quadratic)
 
-for i in {0..0}
-do
-    python train.py --problem=quadratic-wav --num_epochs=10000 --save_path=./quadratic-wav
-    #python train.py --problem=quadratic --num_epoches=10000 --save_path=./quadratic
-    #python train.py --problem=sin --num_epochs=10000 --save_path=./sin
-done
+python train.py --problem=sin-wav --num_epochs=1000 --save_path=./sin-wav-200 --num_steps=200
+python train.py --problem=sin-wav --num_epochs=1000 --save_path=./sin-wav-100 --num_steps=100
+python train.py --problem=quadratic-wav --num_epochs=1000 --save_path=./quadratic-wav-100 --num_steps 100
+python train.py --problem=quadratic-wav --num_epochs=1000 --save_path=./quadratic-wav-200 --num_steps 200

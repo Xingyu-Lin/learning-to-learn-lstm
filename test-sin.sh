@@ -6,7 +6,8 @@
 optimizers=("L2L" "Adam" "Momentum" "NAG" "RMSProp" "SGD")
 tLen=${#optimizers[@]}
 
-python evaluate.py --optimizer=${optimizers[0]} --problem=sin --path=./sin --problem_path=./problems/sin.npy --learning_rate=0.001 --num_steps=1000
+python evaluate.py --optimizer=${optimizers[0]} --problem=sin --path=./sin --problem_path=./problems/sin.npy --learning_rate=0.001 --num_steps=100
+python evaluate.py --optimizer=${optimizers[0]} --problem=sin-wav --path=./sin-wav-100 --problem_path=./problems/sin.npy --learning_rate=0.001 --num_steps=100
 
 for (( i=1; i<${tLen}; i++ ));
 do
